@@ -1,0 +1,6 @@
+moderngl
+moderngl_window
+pyglet
+numpy
+pyrr
+freetype
