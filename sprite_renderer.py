@@ -14,26 +14,20 @@ class SpriteRenderer():
         self.prog = shader
         self.instance_count = 0
 
-        # vertex buffer
+        # vertex array
         vertices = numpy.array([
             0.0, 0.0, 0.0, 0.0,
             0.0, 1.0, 0.0, 1.0,
             1.0, 0.0, 1.0, 0.0,
             1.0, 1.0, 1.0, 1.0])
-        vbo = ctx.buffer(vertices.astype('f4').tobytes())
-        self.vao = ctx.vertex_array(self.prog, vbo, 'vertex')
-
-        # instanced vertex buffer
-        self.vbo_instance = ctx.buffer(reserve=40*max_instances)
-        self.vao.bind(self.prog['pos'].location, cls='f', buffer=self.vbo_instance,
-                      fmt='2f', offset=0, stride=40, divisor=1)
-        self.vao.bind(self.prog['size'].location, cls='f', buffer=self.vbo_instance,
-                      fmt='2f', offset=8, stride=40, divisor=1)
-        self.vao.bind(self.prog['color'].location, cls='f', buffer=self.vbo_instance,
-                      fmt='3f', offset=16, stride=40, divisor=1)
-        self.vao.bind(self.prog['layer'].location, cls='f', buffer=self.vbo_instance,
-                      fmt='3f', offset=28, stride=40, divisor=1)
-
+        
+        vertex_buffer = ctx.buffer(vertices.astype('f4').tobytes())
+        self.instance_buffer = ctx.buffer(reserve=40*max_instances)
+        self.vao = ctx.vertex_array(
+            self.prog, 
+            [(vertex_buffer, '4f /v', 'vertex'),
+             (self.instance_buffer, '2f 2f 3f 3f /i', 'pos', 'size', 'color', 'layer')])
+        
         # texture array
         textures = ctx.texture_array((layer_width, layer_height, layers), 4)
 
@@ -77,7 +71,7 @@ class SpriteRenderer():
             data.extend([object.texture.width/layer_width,
                          object.texture.height/layer_height,
                          layout])
-        self.vbo_instance.write(numpy.array(data).astype('f4'), 40*self.instance_count)
+        self.instance_buffer.write(numpy.array(data).astype('f4'), 40*self.instance_count)
         self.instance_count += len(objects)
     
     def draw(self):
