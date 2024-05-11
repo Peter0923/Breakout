@@ -32,22 +32,19 @@ class ParticleGenerator(object):
         self.particles = [Particle() for i in range(particle_amount)]
         self.last_used = 0
 
-        # rendering VBO
+        # vertex array
         quad = numpy.array([
             0.0, 0.0, 0.0, 0.0,
             0.0, 1.0, 0.0, 1.0,
             1.0, 0.0, 1.0, 0.0,
-            1.0, 1.0, 1.0, 1.0], 
-            dtype='f4')
-        self.vbo = self.ctx.buffer(quad)
-        self.vao = self.ctx.vertex_array(self.shader, self.vbo, 'vertex')
-
-        # instanced VBO
-        self.vbo1 = self.ctx.buffer(reserve=particle_amount*24, dynamic=True)
-        self.vao.bind(self.shader['offset'].location, cls='f', buffer=self.vbo1, 
-                      fmt='2f', offset=0, stride=24, divisor=1)
-        self.vao.bind(self.shader['color'].location, cls='f', buffer=self.vbo1,
-                      fmt='4f', offset=8, stride=24, divisor=1)
+            1.0, 1.0, 1.0, 1.0])
+        
+        vertex_buffer = self.ctx.buffer(quad.astype('f4'))
+        self.instance_buffer = self.ctx.buffer(reserve=particle_amount * 24)
+        self.vao = self.ctx.vertex_array(
+            self.shader, 
+            [(vertex_buffer, '4f /v', 'vertex'),
+             (self.instance_buffer, '2f 4f /i', 'offset', 'color')])
         
         # bind texture
         self.shader['sprite'] = 3
@@ -83,7 +80,7 @@ class ParticleGenerator(object):
     
         # update buffer
         instance_data = numpy.array(instance_data, dtype='f4')
-        self.vbo1.write(instance_data)
+        self.instance_buffer.write(instance_data)
 
         # rendering
         self.ctx.blend_func = self.ctx.SRC_ALPHA, self.ctx.ONE
